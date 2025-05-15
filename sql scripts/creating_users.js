@@ -1,12 +1,12 @@
 const mysql = require("mysql2/promise");
-require("dotenv").config({ path: "../.env" });
+require("dotenv").config();
 (async () => {
     console.log("Environment Variables:", {
         host: process.env.host,
         user: process.env.user,
         password: process.env.DBpassword,
         database: process.env.database,
-        port: process.env.port,
+        port: process.env.DBport,
       });
   const connection = await mysql.createConnection({
     host: process.env.host,
