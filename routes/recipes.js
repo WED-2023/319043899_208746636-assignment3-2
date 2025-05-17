@@ -11,14 +11,6 @@ router.get("/", (req, res) => res.send("im here"));
 /**
  * This path returns a full details of a recipe by its id
  */
-router.get("/:recipeId", async (req, res, next) => {
-  try {
-    const recipe = await recipes_utils.getRecipeDetails(req.params.recipeId);
-    res.send(recipe);
-  } catch (error) {
-    next(error);
-  }
-});
 
 
 router.get("/random", async (req, res) => {
@@ -39,7 +31,7 @@ router.get("/lastViews", async (req, res) => {
     if (!user_id) {
       return res.status(400).send({ message: "Missing user_id in path" });
     }
-    const recipes = await recipes_utils.getLastThreeViews(user_id);
+    const recipes =  await recipes_utils.getLastThreeViews(user_id);
     if (!recipes || recipes.length === 0) {
       return res.status(404).send({ message: "No views found" });
     }
@@ -80,6 +72,15 @@ router.post("/recipes", async (req, res) => {
   } catch (error) {
     console.error("Error creating recipe:", error);
     res.status(500).send({ message: "Internal server error" });
+  }
+});
+
+router.get("/:recipeId", async (req, res, next) => {
+  try {
+    const recipe = await recipes_utils.getRecipeDetails(req.params.recipeId);
+    res.send(recipe);
+  } catch (error) {
+    next(error);
   }
 });
 
