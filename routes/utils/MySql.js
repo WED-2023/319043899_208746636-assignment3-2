@@ -7,8 +7,8 @@ connectionLimit:4,
   host: process.env.host,//"localhost"
   user: process.env.user,//"root"
   password: process.env.DBpassword,
-  database:process.env.database
-  // database:"mydb"
+  database:process.env.database,
+  port:process.env.DBport
 }
 const pool = new mysql.createPool(config);
 
@@ -38,6 +38,8 @@ const connection =  () => {
  };
 const query = (sql, binding) => {
   return new Promise((resolve, reject) => {
+    console.log("got query:" + sql);
+    console.log("got binding:" + binding);
     pool.query(sql, binding, (err, result, fields) => {
       if (err) reject(err);
       resolve(result);
