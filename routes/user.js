@@ -26,11 +26,20 @@ router.use(async function (req, res, next) {
  */
 router.post('/favorites', async (req,res,next) => {
   try{
+    console.log("Session object:", req.session);
     const user_id = req.session.user_id;
     const recipe_id = req.body.recipeId;
+    if (!recipe_id) {
+      return res.status(400).send({ message: "Missing recipeId in body" });
+    }
+
     await user_utils.markAsFavorite(user_id,recipe_id);
     res.status(200).send("The Recipe successfully saved as favorite");
     } catch(error){
+      console.error("Error in /favorites:", error);
+      if (error.code === 'ER_DUP_ENTRY'||error.message.includes("Duplicate entry") ) {
+         res.status(409).send({ message: "This favorite recipe already exists", success: false });
+      }
     next(error);
   }
 })
