@@ -89,9 +89,13 @@ router.get('/myrecipes', async (req,res) => {
   try{
     myrecipes = await user_utils.getMyRecipes(req.session.user_id);
     res.status(200).send(myrecipes);
-  } catch(error){
-    console.error("Error fetching user's recipe:", error);
-    res.status(500).send("Internal Server Error");
+  } catch (error) {
+    if (error.status === 404) {
+      res.status(404).send({ message: error.message });
+    } else {
+      console.error("Error fetching user's recipes:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
   }
 });
 

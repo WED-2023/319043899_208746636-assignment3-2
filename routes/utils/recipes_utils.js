@@ -21,20 +21,9 @@ async function getRecipeInformation(recipe_id) {
 }
 
 async function getRecipeDetails(recipe_id) {
+    console.log("Attempting to get recipe detail form Spoonacular API, recipe_id:", recipe_id);
     let recipe_info = await getRecipeInformation(recipe_id);
-    let { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree } = recipe_info.data;
-
-    return {
-        id: id,
-        title: title,
-        readyInMinutes: readyInMinutes,
-        image: image,
-        popularity: aggregateLikes,
-        vegan: vegan,
-        vegetarian: vegetarian,
-        glutenFree: glutenFree,
-        
-    }
+    return Recipe.fromSpoonacularApi(recipe_info.data);
 }
 
 
@@ -74,6 +63,36 @@ async function getLastThreeViews(user_id) {
     }
 }
 
+async function getSearchResults(search, number = 5, cuisine, diet, intolerance) {
+    try {
+      console.log("Fetching search results from Spoonacular API");
+      const params = {
+        query: search,
+        number: number,
+        apiKey: process.env.spooncular_apiKey,
+      };
+  
+      // Add optional filters
+      if (cuisine) params.cuisine = cuisine;
+      if (diet) params.diet = diet;
+      if (intolerance) params.intolerances = intolerance;
+
+      const response = await axios.get(`${api_domain}/complexSearch`, { params });
+  
+      const recipes = response.data.results.map(async (recipe) => {
+        const recipeDetails = await getRecipeDetails(recipe.id);
+        return recipeDetails;
+      });
+  
+      // Wait for all recipe details to resolve
+      return await Promise.all(recipes);
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+      throw error;
+    }
+  }
+
+
 
 async function getRecipesPreview(recipeIds) {
   if (!recipeIds || recipeIds.length === 0) {
@@ -104,5 +123,6 @@ module.exports = {
     getRecipeDetails,
     getRandomRecipes,
     getLastThreeViews,
+    getSearchResults
     getRecipesPreview,
 };
