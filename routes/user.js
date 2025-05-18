@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 const DButils = require("./utils/DButils");
 const user_utils = require("./utils/user_utils");
-const recipe_utils = require("./utils/recipes_utils");
+const recipes_utils = require("./utils/recipes_utils");
 
 /**
  * Authenticate all incoming requests by middleware
@@ -61,7 +61,61 @@ router.get('/favorites', async (req,res,next) => {
   }
 });
 
+router.get("/lastViews", async (req, res) => {
+  try {
+    console.log("Got last views request");
+    const recipes =  await recipes_utils.getLastThreeViews(req.user_id);
+    if (!recipes || recipes.length === 0) {
+      return res.status(404).send({ message: "No views found" });
+    }
+    res.send(recipes);
+  } catch (error) {
+    console.error("Error fetching last views:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 
+router.get('/myrecipes', async (req,res) => {
+  try{
+    myrecipes = await user_utils.getMyRecipes(req.session.user_id);
+    res.status(200).send(myrecipes);
+  } catch(error){
+    console.error("Error fetching user's recipe:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+
+router.post("/recipes", async (req, res) => {
+  try {
+    const {
+      name,
+      picture,
+      time,
+      popularity,
+      diet_type,
+      gluten,
+      description,
+    } = req.body;
+    const created_by = req.user_id;
+    // Validate required fields
+    if (!name || !picture || !time || !popularity || !diet_type || !description) {
+      return res.status(400).send({ message: "Missing required fields" });
+    }
+
+    // Insert the recipe into the database
+    const result = await DButils.execQuery(`
+      INSERT INTO recipes (name, picture, time, popularity, diet_type, gluten, created_by, description)
+      VALUES ('${name}', '${picture}', '${time}', '${popularity}', '${diet_type}', ${gluten}, ${created_by}, '${description}')
+    `);
+
+    // Respond with success
+    res.status(201).send({ message: "Recipe created successfully", recipe_id: result.insertId });
+  } catch (error) {
+    console.error("Error creating recipe:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
 
 module.exports = router;
