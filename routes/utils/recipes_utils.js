@@ -74,9 +74,35 @@ async function getLastThreeViews(user_id) {
     }
 }
 
+
+async function getRecipesPreview(recipeIds) {
+  if (!recipeIds || recipeIds.length === 0) {
+    return [];
+  }
+    console.log("1");
+
+  // המרת מערך לשרשרת מופרדת בפסיקים לשימוש ב-IN ב-SQL
+  const idsString = recipeIds.join(",");
+
+  // שליפת פרטים רלוונטיים מהטבלה recipes בבסיס הנתונים
+      console.log("2");
+  const recipes = await DButils.execQuery(`
+    SELECT *
+    FROM project.recipes
+    WHERE recipe_id IN (${idsString})
+  `);
+      console.log("3");
+
+  // אם יש לך מחלקת Recipe עם פונקציה fromDbRow, אפשר להשתמש בה להמרה
+  return recipes.map(recipeRow => Recipe.fromDbRow(recipeRow));
+  
+}
+
+
 exports.getRecipeDetails = getRecipeDetails;
 module.exports = {
     getRecipeDetails,
     getRandomRecipes,
     getLastThreeViews,
+    getRecipesPreview,
 };

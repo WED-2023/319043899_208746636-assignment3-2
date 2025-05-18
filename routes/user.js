@@ -34,6 +34,12 @@ router.post('/favorites', async (req,res,next) => {
     }
 
     await user_utils.markAsFavorite(user_id,recipe_id);
+
+    await DButils.execQuery(`
+      UPDATE project.recipes SET popularity = popularity + 1 WHERE recipe_id = ${recipe_id}
+    `);
+
+
     res.status(200).send("The Recipe successfully saved as favorite");
     } catch(error){
       console.error("Error in /favorites:", error);
@@ -51,10 +57,13 @@ router.get('/favorites', async (req,res,next) => {
   try{
     const user_id = req.session.user_id;
     let favorite_recipes = {};
+    console.log("attempting to get favorite recipes");
     const recipes_id = await user_utils.getFavoriteRecipes(user_id);
     let recipes_id_array = [];
     recipes_id.map((element) => recipes_id_array.push(element.recipe_id)); //extracting the recipe ids into array
-    const results = await recipe_utils.getRecipesPreview(recipes_id_array);
+        console.log("attempting for preview");
+
+    const results = await recipes_utils.getRecipesPreview(recipes_id_array);
     res.status(200).send(results);
   } catch(error){
     next(error); 
@@ -86,33 +95,52 @@ router.get('/myrecipes', async (req,res) => {
   }
 });
 
-
 router.post("/recipes", async (req, res) => {
   try {
     const {
       name,
       picture,
-      time,
-      popularity,
-      diet_type,
-      gluten,
+      timeToMake,
+      dietCategory,
+      isGlutenFree,
       description,
+      ingredients,
+      cuisine,
+      dishes
     } = req.body;
+
     const created_by = req.user_id;
-    // Validate required fields
-    if (!name || !picture || !time || !popularity || !diet_type || !description) {
+    console.log(req.body);
+    if (
+      !name || !picture || !timeToMake || !dietCategory || isGlutenFree === undefined ||
+      !description || !ingredients || !cuisine || dishes === undefined
+    ) {
       return res.status(400).send({ message: "Missing required fields" });
     }
 
-    // Insert the recipe into the database
-    const result = await DButils.execQuery(`
-      INSERT INTO recipes (name, picture, time, popularity, diet_type, gluten, created_by, description)
-      VALUES ('${name}', '${picture}', '${time}', '${popularity}', '${diet_type}', ${gluten}, ${created_by}, '${description}')
-    `);
+    if (!Array.isArray(ingredients) || !ingredients.every(item => typeof item === "string")) {
+      return res.status(400).send({ message: "Ingredients must be an array of strings" });
+    }
 
-    // Respond with success
+    // המרת ingredients ל־JSON string
+    const ingredientsStr = JSON.stringify(ingredients).replace(/'/g, "''"); // לבריחה בטוחה של גרשיים
+    const escape = str => str.replace(/'/g, "''"); 
+
+    
+    const query = `
+      INSERT INTO recipes 
+      (name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
+      VALUES 
+      ('${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}',  '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${escape(ingredientsStr)}', '${escape(cuisine)}', ${dishes})
+    `;
+
+    const result = await DButils.execQuery(query);
+
     res.status(201).send({ message: "Recipe created successfully", recipe_id: result.insertId });
   } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY' || (error.message && error.message.includes("Duplicate entry"))) {
+      return res.status(409).send({ message: "This recipe already exists", success: false });
+    }
     console.error("Error creating recipe:", error);
     res.status(500).send({ message: "Internal server error" });
   }
