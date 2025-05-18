@@ -20,6 +20,9 @@ async function getMyRecipes(user_id){
     console.log(`fetching ${user_id} user's recipes`);
     const result = await DButils.execQuery(`SELECT * FROM recipes WHERE created_by=${user_id}`);
     console.log(`fetched ${result.length} recipes`);
+    if (result.length === 0) {
+        throw { status: 404, message: "No recipes found for this user" };
+    }
     const myrecipes = result.map(row => Recipe.fromDbRow(row));
     return myrecipes;
 }

@@ -6,10 +6,8 @@ const bcrypt = require("bcrypt");
 
 router.post("/Register", async (req, res, next) => {
   try {
-    // parameters exists
-    // valid parameters
-    // username exists
-    let user_details = {
+    // Extract user details from the request body
+    const user_details = {
       username: req.body.username,
       firstname: req.body.firstname,
       lastname: req.body.lastname,
@@ -17,6 +15,13 @@ router.post("/Register", async (req, res, next) => {
       password: req.body.password,
       email: req.body.email,
       profilePic: req.body.profilePic
+    };
+
+    // Check for missing fields
+    for (const [key, value] of Object.entries(user_details)) {
+      if (!value) {
+        return res.status(400).send({ message: `Missing required field: ${key}` });
+      }
     }
     let users = [];
     users = await DButils.execQuery("SELECT username from users");
@@ -36,7 +41,8 @@ router.post("/Register", async (req, res, next) => {
     );
     res.status(201).send({ message: "user created", success: true });
   } catch (error) {
-    next(error);
+    console.error("Error during registration:", error);
+    res.status(500).send({ message: "Internal Server Error" });
   }
 });
 
