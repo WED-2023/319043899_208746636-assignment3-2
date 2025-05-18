@@ -66,8 +66,8 @@ async function getLastThreeViews(user_id) {
             LIMIT 3
         `);
       console.log("Last 3 views result:", result);
-    //   const recipes = result.map(row => Recipe.fromDbRow(row));
-      return result;
+      const recipes = result.map(row => Recipe.fromDbRow(row));
+      return recipes;
     } catch (error) {
       console.error("Error fetching last 3 views:", error);
       throw error;
@@ -78,5 +78,5 @@ exports.getRecipeDetails = getRecipeDetails;
 module.exports = {
     getRecipeDetails,
     getRandomRecipes,
-    getLastThreeViews
+    getLastThreeViews,
 };
