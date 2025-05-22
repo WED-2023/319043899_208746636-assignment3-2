@@ -75,33 +75,43 @@ async function getSearchResults(search, number = 5, cuisine, diet, intolerance) 
   }
 
 
-
-async function getRecipesPreview(recipeIds) {
-  if (!recipeIds || recipeIds.length === 0) {
-    return [];
+  async function addWatchedMetadata(user_id, recipes_list) {
+    if (!user_id) {
+        for (const recipe of recipes_list){
+            recipe['isWatched'] = false;
+        }
+      return;
+    }
+    for (const recipe of recipes_list) {
+      const watchedResult = await DButils.execQuery(`
+        SELECT * FROM views 
+        WHERE user_id = ${user_id} AND recipe_id = ${recipe.recipe_id}
+      `);
+      recipe['isWatched'] = watchedResult.length > 0;
+    }
   }
-    console.log("1");
 
-
-  const idsString = recipeIds.join(",");
-
-      console.log("2");
-  const recipes = await DButils.execQuery(`
-    SELECT *
-    FROM project.recipes
-    WHERE recipe_id IN (${idsString})
-  `);
-      console.log("3");
-
-  return recipes.map(recipeRow => Recipe.fromDbRow(recipeRow));
-  
-}
-
+  async function addFavoriteMetadata(user_id, recipes_list) {
+    if (!user_id) {
+        for (const recipe of recipes_list){
+            recipe['isFavorite'] = false;
+        }
+      return;
+    }
+    for (const recipe of recipes_list) {
+      const favoriteResult = await DButils.execQuery(`
+        SELECT * FROM FavoriteRecipes 
+        WHERE user_id = ${user_id} AND recipe_id = ${recipe.recipe_id}
+      `);
+      recipe['isFavorite'] = favoriteResult.length > 0;
+    }
+  }
 
 exports.getRecipeDetails = getRecipeDetails;
 module.exports = {
     getRecipeDetails,
     getRandomRecipes,
     getSearchResults,
-    getRecipesPreview
+    addFavoriteMetadata,
+    addWatchedMetadata,
 };

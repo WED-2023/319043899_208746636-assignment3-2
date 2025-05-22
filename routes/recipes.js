@@ -9,6 +9,9 @@ router.get("/random", async (req, res) => {
   try {
     console.log("Got random recipes request");
     const recipes = await recipes_utils.getRandomRecipes();
+    await recipes_utils.addWatchedMetadata(req.user_id, recipes);
+    await recipes_utils.addFavoriteMetadata(req.user_id, recipes);
+    
     res.send(recipes);
   } catch (error) {
     console.error("Error fetching random recipe:", error);
@@ -27,13 +30,15 @@ router.get("/search", async (req, res) => {
     if (!recipes || recipes.length === 0) {
       return res.status(404).send({ message: "No recipes found for the given search criteria" });
     }
+
+    await recipes_utils.addWatchedMetadata(req.user_id, recipes);
+    await recipes_utils.addFavoriteMetadata(req.user_id, recipes);
     res.send(recipes);
   } catch (error) {
     console.error("Error fetching search results:", error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
-
 
 
 router.get("/", (req, res) => res.send("im here"));

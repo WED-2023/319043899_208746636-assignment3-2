@@ -7,11 +7,11 @@ const recipes_utils = require("./utils/recipes_utils");
 /**
  * Authenticate all incoming requests by middleware
  */
-
-
-
 router.use(async (req, res, next) => {
+  console.log("Session object:", req.session);
+  console.log("Session object:", req.session.user_id);
   if (req.session && req.session.user_id) {
+    console.log("User authenticated, user_id:", req.session.user_id);
     try {
       const result = await DButils.execQuery(
         `SELECT 1 FROM users WHERE user_id = ${req.session.user_id}`
@@ -81,6 +81,15 @@ router.get('/favorites', async (req,res,next) => {
         console.log("attempting for preview");
 
     const results = await recipes_utils.getRecipesPreview(recipes_id_array);
+    if (!results || results.length === 0) {
+      return res.status(404).send({ message: "No favorite recipes found" });
+    }
+    console.log("Got favorite recipes response from DB");
+
+    await recipes_utils.addWatchedMetadata(user_id, results);
+    for (const recipe of results) {
+      recipe['isFavorite'] = true;
+    } 
     res.status(200).send(results);
   } catch(error){
     next(error); 
@@ -106,6 +115,7 @@ router.delete('/favorites', async (req,res,next) => {
 
 });
 
+
 router.post("/lastViews", async (req, res, next) => {
   try {
     const user_id = req.session.user_id;
@@ -124,14 +134,23 @@ router.post("/lastViews", async (req, res, next) => {
   }
 });
 
+
 router.get("/lastViews", async (req, res) => {
   try {
     console.log("Got last views request");
-    const recipes =  await user_utils.getLastThreeViews(req.user_id);
+    const recipes = await user_utils.getLastThreeViews(req.user_id);
     if (!recipes || recipes.length === 0) {
       return res.status(404).send({ message: "No views found" });
     }
-    res.send(recipes);
+
+    console.log("Adding metadata to last viewed recipes");
+
+    await recipes_utils.addFavoriteMetadata(req.user_id, recipes);
+    for (const recipe of recipes) {
+      recipe['isWatched'] = true;
+    }
+
+    res.status(200).send(recipes); 
   } catch (error) {
     console.error("Error fetching last views:", error);
     res.status(500).send("Internal Server Error");
@@ -191,19 +210,6 @@ router.post("/recipes", async (req, res) => {
       cuisine,
       dishes
     });
-    // const ingredientsStr = JSON.stringify(ingredients).replace(/'/g, "''"); // לבדוק אם צריך את זה!!!!!!
-    // const escape = str => str.replace(/'/g, "''"); 
-
-    
-    // const query = `
-    //   INSERT INTO recipes 
-    //   (name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
-    //   VALUES 
-    //   ('${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}',  '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${escape(ingredientsStr)}', '${escape(cuisine)}', ${dishes})
-    // `;
-
-    // const result = await DButils.execQuery(query);
-
     res.status(201).send({ message: "Recipe created successfully", recipe_id: result.insertId });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY' || (error.message && error.message.includes("Duplicate entry"))) {
