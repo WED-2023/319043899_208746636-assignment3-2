@@ -25,8 +25,7 @@ require("dotenv").config();
         user_id INT NOT NULL,
         recipe_id INT NOT NULL,
         PRIMARY KEY (user_id, recipe_id),
-        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-        FOREIGN KEY (recipe_id) REFERENCES recipes(recipe_id) ON DELETE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
       )
     `);
     console.log("FavoriteRecipes table created successfully.");

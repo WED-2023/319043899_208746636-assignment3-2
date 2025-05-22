@@ -101,15 +101,15 @@ async function recordView(user_id, recipe_id) {
 }
 
 
-async function preperForPreview(user_id, recipes_list) {
-  for (const recipe of recipes_list) {  
-    const result = await DButils.execQuery(`
-          SELECT * FROM views 
-          WHERE user_id = ${user_id} AND recipe_id = ${recipe_id}
-      `);
-      recipe['isWatched'] = result.length > 0;
-  }
-}
+// async function preperForPreview(user_id, recipes_list) {
+//   for (const recipe of recipes_list) {  
+//     const result = await DButils.execQuery(`
+//           SELECT * FROM views 
+//           WHERE user_id = ${user_id} AND recipe_id = ${recipe_id}
+//       `);
+//       recipe['isWatched'] = result.length > 0;
+//   }
+// }
 
 
 exports.recordView = recordView;

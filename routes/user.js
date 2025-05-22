@@ -45,10 +45,10 @@ router.post('/favorites', async (req,res,next) => {
     if (!recipe_id) {
       return res.status(400).send({ message: "Missing recipeId in body" });
     }
-    const recipeExists = await DButils.execQuery(`SELECT recipe_id FROM recipes WHERE recipe_id = ${recipe_id}`);
-    if (recipeExists.length === 0) {
-      return res.status(404).send({ message: "Recipe not found", success: false });
-    }
+    // const recipeExists = await DButils.execQuery(`SELECT recipe_id FROM recipes WHERE recipe_id = ${recipe_id}`);
+    // if (recipeExists.length === 0) {
+    //   return res.status(404).send({ message: "Recipe not found", success: false });
+    // }
 
     await user_utils.markAsFavorite(user_id,recipe_id);
 

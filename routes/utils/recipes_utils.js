@@ -107,6 +107,25 @@ async function getSearchResults(search, number = 5, cuisine, diet, intolerance) 
     }
   }
 
+
+  async function getRecipesPreview(recipeIds) {
+  if (!recipeIds || recipeIds.length === 0) {
+    return [];
+  }
+  console.log("1");
+  const idsString = recipeIds.join(",");
+  console.log("2");
+  const recipes = await DButils.execQuery(`
+    SELECT *
+    FROM project.recipes
+    WHERE recipe_id IN (${idsString})
+  `);
+      console.log("3");
+
+  return recipes.map(recipeRow => Recipe.fromDbRow(recipeRow));
+  
+}
+
 exports.getRecipeDetails = getRecipeDetails;
 module.exports = {
     getRecipeDetails,
@@ -114,4 +133,5 @@ module.exports = {
     getSearchResults,
     addFavoriteMetadata,
     addWatchedMetadata,
+    getRecipesPreview
 };
