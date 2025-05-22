@@ -7,18 +7,31 @@ const recipes_utils = require("./utils/recipes_utils");
 /**
  * Authenticate all incoming requests by middleware
  */
-router.use(async function (req, res, next) {
+
+
+
+router.use(async (req, res, next) => {
   if (req.session && req.session.user_id) {
-    DButils.execQuery("SELECT user_id FROM users").then((users) => {
-      if (users.find((x) => x.user_id === req.session.user_id)) {
-        req.user_id = req.session.user_id;
-        next();
+    try {
+      const result = await DButils.execQuery(
+        `SELECT 1 FROM users WHERE user_id = ${req.session.user_id}`
+      );
+
+      if (result.length === 0) {
+        return res.status(401).send({ message: "Invalid session" });
       }
-    }).catch(err => next(err));
+
+      req.user_id = req.session.user_id;
+      next();
+    } catch (err) {
+      next(err);
+    }
   } else {
-    res.sendStatus(401);
+    console.log("User not authenticated");
+    res.status(401).send({ message: "User not authenticated" });
   }
 });
+
 
 
 /**
@@ -31,6 +44,10 @@ router.post('/favorites', async (req,res,next) => {
     const recipe_id = req.body.recipeId;
     if (!recipe_id) {
       return res.status(400).send({ message: "Missing recipeId in body" });
+    }
+    const recipeExists = await DButils.execQuery(`SELECT recipe_id FROM recipes WHERE recipe_id = ${recipe_id}`);
+    if (recipeExists.length === 0) {
+      return res.status(404).send({ message: "Recipe not found", success: false });
     }
 
     await user_utils.markAsFavorite(user_id,recipe_id);
@@ -70,10 +87,47 @@ router.get('/favorites', async (req,res,next) => {
   }
 });
 
+router.delete('/favorites', async (req,res,next) => {
+  try{
+    const user_id = req.session.user_id;
+    const recipe_id = req.body.recipeId;
+    
+    if (!recipe_id) {
+      return res.status(400).send({ message: "Missing recipeId" });
+    }
+
+    await user_utils.removeFavorite(user_id, recipe_id);
+
+    res.status(200).send({ message: "Recipe removed from favorites" });
+  } catch (error) {
+    console.error("Error in DELETE /favorites/:recipeId:", error);
+    next(error);
+  }
+
+});
+
+router.post("/lastViews", async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const recipe_id = req.body.recipeId;
+
+    if (!recipe_id) {
+      return res.status(400).send({ message: "Missing recipeId in body" });
+    }
+
+    await user_utils.recordView(user_id, recipe_id);
+
+    res.status(201).send({ message: "View recorded successfully" });
+  } catch (error) {
+    console.error("Error in POST /views:", error);
+    next(error);
+  }
+});
+
 router.get("/lastViews", async (req, res) => {
   try {
     console.log("Got last views request");
-    const recipes =  await recipes_utils.getLastThreeViews(req.user_id);
+    const recipes =  await user_utils.getLastThreeViews(req.user_id);
     if (!recipes || recipes.length === 0) {
       return res.status(404).send({ message: "No views found" });
     }
@@ -114,7 +168,7 @@ router.post("/recipes", async (req, res) => {
     } = req.body;
 
     const created_by = req.user_id;
-    console.log(req.body);
+
     if (
       !name || !picture || !timeToMake || !dietCategory || isGlutenFree === undefined ||
       !description || !ingredients || !cuisine || dishes === undefined
@@ -125,20 +179,30 @@ router.post("/recipes", async (req, res) => {
     if (!Array.isArray(ingredients) || !ingredients.every(item => typeof item === "string")) {
       return res.status(400).send({ message: "Ingredients must be an array of strings" });
     }
-
-    // המרת ingredients ל־JSON string
-    const ingredientsStr = JSON.stringify(ingredients).replace(/'/g, "''"); // לבריחה בטוחה של גרשיים
-    const escape = str => str.replace(/'/g, "''"); 
+    const result = await user_utils.createRecipe({
+      name,
+      picture,
+      timeToMake,
+      dietCategory,
+      isGlutenFree,
+      created_by,
+      description,
+      ingredients,
+      cuisine,
+      dishes
+    });
+    // const ingredientsStr = JSON.stringify(ingredients).replace(/'/g, "''"); // לבדוק אם צריך את זה!!!!!!
+    // const escape = str => str.replace(/'/g, "''"); 
 
     
-    const query = `
-      INSERT INTO recipes 
-      (name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
-      VALUES 
-      ('${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}',  '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${escape(ingredientsStr)}', '${escape(cuisine)}', ${dishes})
-    `;
+    // const query = `
+    //   INSERT INTO recipes 
+    //   (name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
+    //   VALUES 
+    //   ('${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}',  '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${escape(ingredientsStr)}', '${escape(cuisine)}', ${dishes})
+    // `;
 
-    const result = await DButils.execQuery(query);
+    // const result = await DButils.execQuery(query);
 
     res.status(201).send({ message: "Recipe created successfully", recipe_id: result.insertId });
   } catch (error) {

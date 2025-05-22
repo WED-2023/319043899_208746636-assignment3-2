@@ -22,9 +22,9 @@ class Recipe {
     this.isGlutenFree = isGlutenFree;
     this.created_by = created_by;
     this.description = description;
-    this.ingredients = ingredients;  // אופציונלי, להוסיף אם אתה רוצה
-    this.cuisine = cuisine;          // אופציונלי
-    this.dishes = dishes;            // אופציונלי
+    this.ingredients = ingredients;  
+    this.cuisine = cuisine;          
+    this.dishes = dishes;           
   }
 
   getDetails() {

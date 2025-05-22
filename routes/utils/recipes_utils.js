@@ -43,25 +43,7 @@ async function getRandomRecipes() {
 }
 
 
-async function getLastThreeViews(user_id) {
-    try {
-        console.log("Fetching last 3 views for user:", user_id);
-        const result = await DButils.execQuery(`
-            SELECT *
-            FROM views v
-            JOIN recipes r ON v.recipe_id = r.recipe_id
-            WHERE v.user_id = ${user_id}
-            ORDER BY v.viewed_at DESC
-            LIMIT 3
-        `);
-      console.log("Last 3 views result:", result);
-      const recipes = result.map(row => Recipe.fromDbRow(row));
-      return recipes;
-    } catch (error) {
-      console.error("Error fetching last 3 views:", error);
-      throw error;
-    }
-}
+
 
 async function getSearchResults(search, number = 5, cuisine, diet, intolerance) {
     try {
@@ -100,10 +82,9 @@ async function getRecipesPreview(recipeIds) {
   }
     console.log("1");
 
-  // המרת מערך לשרשרת מופרדת בפסיקים לשימוש ב-IN ב-SQL
+
   const idsString = recipeIds.join(",");
 
-  // שליפת פרטים רלוונטיים מהטבלה recipes בבסיס הנתונים
       console.log("2");
   const recipes = await DButils.execQuery(`
     SELECT *
@@ -112,7 +93,6 @@ async function getRecipesPreview(recipeIds) {
   `);
       console.log("3");
 
-  // אם יש לך מחלקת Recipe עם פונקציה fromDbRow, אפשר להשתמש בה להמרה
   return recipes.map(recipeRow => Recipe.fromDbRow(recipeRow));
   
 }
@@ -122,7 +102,6 @@ exports.getRecipeDetails = getRecipeDetails;
 module.exports = {
     getRecipeDetails,
     getRandomRecipes,
-    getLastThreeViews,
-    getSearchResults
-    getRecipesPreview,
+    getSearchResults,
+    getRecipesPreview
 };
