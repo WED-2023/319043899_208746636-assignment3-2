@@ -30,7 +30,6 @@ router.get("/search", async (req, res) => {
     if (!recipes || recipes.length === 0) {
       return res.status(404).send({ message: "No recipes found for the given search criteria" });
     }
-
     await recipes_utils.addWatchedMetadata(req.user_id, recipes);
     await recipes_utils.addFavoriteMetadata(req.user_id, recipes);
     res.send(recipes);
@@ -47,6 +46,7 @@ router.get("/", (req, res) => res.send("im here"));
 router.get("/:recipeId", async (req, res, next) => {
   try {
     const recipe = await recipes_utils.getRecipeDetails(req.params.recipeId);
+    console.log(recipe);
     res.send(recipe);
   } catch (error) {
     next(error);

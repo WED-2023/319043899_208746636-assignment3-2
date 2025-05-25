@@ -26,8 +26,18 @@ router.post("/Register", async (req, res, next) => {
     let users = [];
     users = await DButils.execQuery("SELECT username from users");
 
-    if (users.find((x) => x.username === user_details.username))
-      throw { status: 409, message: "Username taken" };
+    if (users.find((x) => x.username === user_details.username)){
+      return res.status(409).send({ message: "Username or email already exists" });
+      //throw { status: 409, message: "Username taken" };
+    }
+
+    let emails = [];
+    emails = await DButils.execQuery("SELECT email from users");
+
+    if (emails.find((x) => x.email === user_details.email)){
+      return res.status(409).send({ message: "Username or email already exists" });
+      //throw { status: 409, message: "Username taken" };
+    }
 
     // add the new username
     let hash_password = bcrypt.hashSync(
@@ -69,7 +79,7 @@ router.post("/Login", async (req, res, next) => {
     console.log("session user_id login: " + req.session.user_id);
 
     // return cookie
-    res.status(200).send({ message: "login succeeded " , success: true });
+    res.status(200).send({ message: "login succeeded" , success: true });
   } catch (error) {
     next(error);
   }

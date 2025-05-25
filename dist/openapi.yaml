@@ -15,16 +15,13 @@ servers:
 tags:
 - name: Authentication
   description: |
-    Handles user authentication processes such as signup and login.
+    Handles user authentication processes such as register and login.
 - name: Recipes
   description: |
-    Covers all recipe-related actions, including searching, viewing, previewing, creating new recipes, managing preparation steps, and planning meals.
-- name: User Data
+    Covers all recipe-related actions, including searching, previewing,and random recipes.
+- name: Users
   description: |
-    Manages user-specific data like personal recipes, family recipes, and favorites.
-- name: Public
-  description: |
-    Provides access to publicly available recipes and general site content.
+    Manages user-specific data like personal recipes, viewed recipes, and favorites.
 paths:
   /Login:
     post:
@@ -39,9 +36,9 @@ paths:
         required: true
       responses:
         "200":
-          description: Login successful
+          description: login succeeded
         "401":
-          description: Invalid credentials
+          description: Username or Password incorrect
   /Register:
     post:
       tags:
@@ -55,25 +52,28 @@ paths:
         required: true
       responses:
         "201":
-          description: User registered successfully
+          description: user created
         "400":
           description: Missing or invalid fields
         "409":
           description: Username or email already exists
         "500":
-          description: Server error
-  /favorites:
+          description: Internal Server Error
+  /Logout:
+    post:
+      tags:
+      - Authentication
+      summary: Logs out the current user
+      responses:
+        "200":
+          description: Logout succeeded
+        "500":
+          description: Internal Server Error
+  /users/favorites:
     get:
       tags:
-      - User Data
-      summary: Get the user's favorite recipes
-      parameters:
-      - name: username
-        in: query
-        description: The username of the user
-        required: true
-        schema:
-          type: string
+      - Users
+      summary: Get the logged-in user's favorite recipes
       responses:
         "200":
           description: List of favorite recipes
@@ -84,12 +84,12 @@ paths:
                 items:
                   $ref: '#/components/schemas/recipe'
         "401":
-          description: Unauthorized access
+          description: User not authenticated
         "404":
-          description: No favorites found
+          description: No favorite recipes found
     post:
       tags:
-      - User Data
+      - Users
       summary: Add a recipe to the user's favorites
       requestBody:
         content:
@@ -104,25 +104,22 @@ paths:
           description: Missing or invalid fields
         "401":
           description: Unauthorized access
+  
+  /users/favorites/{recipeId}:
     delete:
       tags:
-      - User Data
+      - Users
       summary: Remove a recipe from the user's favorites
       parameters:
-      - name: username
-        in: query
-        description: The user's username
-        required: true
-        schema:
-          type: string
-      - name: recipeId
-        in: query
-        description: The ID of the recipe to remove
-        required: true
-        schema:
-          type: string
+        - name: recipeId
+          in: path
+          description: The ID of the recipe to remove
+          required: true
+          schema:
+            type: integer
+            example: 12345
       responses:
-        "200":
+        "201":
           description: Recipe removed from favorites
         "400":
           description: Missing or invalid query parameters
@@ -130,18 +127,11 @@ paths:
           description: Unauthorized access
         "404":
           description: Recipe not found in favorites
-  /myrecipes:
+  /users/myrecipes:
     get:
       tags:
-      - User Data
-      summary: Get the user's private information (recipes)
-      parameters:
-      - name: username
-        in: query
-        description: The username of the user whose private information (recipes) is being requested
-        required: true
-        schema:
-          type: string
+      - Users
+      summary: Get the user's private recipes
       responses:
         "200":
           description: List of private recipes
@@ -155,258 +145,271 @@ paths:
           description: Unauthorized access
         "404":
           description: No private recipes found
-  /family:
-    get:
-      tags:
-      - User Data
-      summary: Get the user's family details (recipes)
-      parameters:
-      - name: username
-        in: query
-        description: The username of the user whose family recipes are being requested
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: List of family recipes
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/recipe'
-        "401":
-          description: Unauthorized access
-        "404":
-          description: No family recipes found
-  /mainPage:
-    get:
-      tags:
-      - Public
-      summary: The website main page
-      responses:
-        "200":
-          description: |
-            Returns a list of 3 random recipes from the databas.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200'
-        "404":
-          description: "Could not find 3 random recipes\n  \n"
-  /recipes:
-    get:
-      tags:
-      - Recipes
-      summary: Display a specific recipe page
-      parameters:
-      - name: recipeName
-        in: query
-        description: The name of the recipe to retrieve
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Recipe details including similar random recipes
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "404":
-          description: Recipe not found
         "500":
-          description: Server error
+          description: Internal Server Error
+  /users/recipes:          
     post:
       tags:
-      - Recipes
+        - Users
       summary: Create a new recipe
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/recipe'
-        required: true
+              type: object
+              required:
+                - name
+                - picture
+                - timeToMake
+                - dietCategory
+                - isGlutenFree
+                - description
+                - ingredients
+                - cuisine
+                - dishes
+              properties:
+                name:
+                  type: string
+                  description: The name of the recipe
+                  example: "Spaghetti Carbonara"
+                picture:
+                  type: string
+                  description: URL to the recipe picture
+                  example: "https://example.com/images/spaghetti.jpg"
+                timeToMake:
+                  type: string
+                  description: Time required to make the recipe
+                  example: "30"
+                dietCategory:
+                  type: string
+                  description: |
+                    The dietary classification of the recipe.
+                  enum:
+                    - vegan
+                    - vegetarian
+                    - none
+                  example: vegetarian
+                isGlutenFree:
+                  type: boolean
+                  description: Indicates if the recipe is gluten free
+                  example: true
+                description:
+                  type: string
+                  description: Recipe description
+                  example: "A classic Italian pasta dish..."
+                ingredients:
+                  type: array
+                  description: List of ingredients
+                  items:
+                    type: string
+                  example: ["300g spaghetti", "2 eggs", "1/2kg bacon", "100g parmesan cheese"]
+                cuisine:
+                  type: string
+                  description: Cuisine type
+                  example: "Italian"
+                dishes:
+                  type: integer
+                  description: Dish amount
+                  example: 4
       responses:
         "201":
           description: Recipe created successfully
         "400":
-          description: Invalid recipe data
+          description: Missing required fields or invalid ingredients format
         "409":
-          description: A recipe with the same name already exists
+          description: Recipe already exists
         "500":
-          description: Server error
-  /search:
+          description: Internal server error
+  /users/lastViews:
     get:
       tags:
-      - Recipes
-      summary: Search for recipes with optional filters
-      parameters:
-      - name: NumberOfReceipes
-        in: query
-        description: Number of desired recipes to return
-        required: true
-        schema:
-          type: integer
-          example: 5
-          enum:
-          - 5
-          - 10
-          - 15
-      - name: searchContent
-        in: query
-        description: Text to search for matching recipes
-        required: true
-        schema:
-          type: string
-          example: pasta
-      - name: cuisine
-        in: query
-        description: Filter recipes by one or more cuisine types (comma-separated)
-        required: false
-        style: form
-        explode: false
-        schema:
-          type: array
-          example:
-          - Italian
-          - Greek
-          items:
-            type: string
-            enum:
-            - African
-            - Asian
-            - American
-            - British
-            - Cajun
-            - Caribbean
-            - Chinese
-            - Eastern European
-            - European
-            - French
-            - German
-            - Greek
-            - Indian
-            - Irish
-            - Italian
-            - Japanese
-            - Jewish
-            - Korean
-            - Latin American
-            - Mediterranean
-            - Mexican
-            - Middle Eastern
-            - Nordic
-            - Southern
-            - Spanish
-            - Thai
-            - Vietnamese
-      - name: diet
-        in: query
-        description: Filter recipes by one or more diet types (comma-separated)
-        required: false
-        style: form
-        explode: false
-        schema:
-          type: array
-          example:
-          - vegetarian
-          - vegan
-          items:
-            type: string
-            enum:
-            - gluten free
-            - ketogenic
-            - vegetarian
-            - lacto-vegetarian
-            - ovo-vegetarian
-            - vegan
-            - pescetarian
-            - paleo
-            - primal
-            - low FODMAP
-            - whole30
-      - name: intolerances
-        in: query
-        description: Filter recipes by one or more intolerances (comma-separated)
-        required: false
-        style: form
-        explode: false
-        schema:
-          type: array
-          example:
-          - gluten
-          - peanut
-          - dairy
-          items:
-            type: string
-            enum:
-            - dairy
-            - egg
-            - gluten
-            - grain
-            - peanut
-            - seafood
-            - sesame
-            - shellfish
-            - soy
-            - sulfite
-            - tree nut
-            - wheat
+        - Users
+      summary: Get the last three recipes viewed by the user
       responses:
         "200":
-          description: A list of recipes matching the search criteria
+          description: List of the last three viewed recipes with metadata
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/recipe'
-        "400":
-          description: Invalid query parameters
         "404":
+          description: No views found for the user
+
+        "500":
+          description: Internal server error
+    post:
+      summary: Record a recipe view for the logged-in user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recipeId
+              properties:
+                recipeId:
+                  type: integer
+                  description: The ID of the recipe being viewed
+      responses:
+        '201':
+          description: View recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: View recorded successfully
+        '400':
+          description: Missing recipeId in body
+        '500':
+          description: Internal server error
+
+
+
+  /recipes/random:
+    get:
+      summary: Get a list of 3 random recipes
+      tags:
+        - Recipes
+      responses:
+        '200':
+          description: A list of random recipes with metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/recipe'
+        '500':
+          description: Internal Server Error    
+  /recipes/search:
+    get:
+      summary: Search for recipes based on query parameters
+      tags:
+        - Recipes
+      parameters:
+        - name: search
+          in: query
+          description: Search keyword or phrase
+          required: true
+          schema:
+            type: string
+        - name: number
+          in: query
+          description: Number of results to return (default 5)
+          required: false
+          schema:
+            type: integer
+            default: 5
+        - name: cuisine
+          in: query
+          description: Filter by cuisine type
+          required: false
+          schema:
+            type: string
+        - name: diet
+          in: query
+          description: Filter by diet type
+          required: false
+          schema:
+            type: string
+        - name: intolerance
+          in: query
+          description: Filter by intolerance type
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of recipes matching search criteria with metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/recipe'
+        '404':
           description: No recipes found
+        '500':
+          description: Internal Server Error
+
+  /recipes/{recipeId}:
+    get:
+      summary: Get detailed information about a specific recipe
+      tags:
+        - Recipes
+      parameters:
+        - name: recipeId
+          in: path
+          description: ID of the recipe to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recipe details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/recipe'
+
+        '404':
+          description: Recipe not found
+        '500':
+          description: Internal Server Error
+  
+  
 components:
   schemas:
     recipe:
       required:
-      - DishesAmount
-      - cuisine
-      - dietCategory
-      - ingredients
-      - instructions
-      - isGlutenFree
       - name
+      - ingredients
       - picture
-      - popularity
       - timeToMake
+      - popularity
+      - dietCategory
+      - isGlutenFree
+      - description
+      - cuisine
+      - dishes
       type: object
       properties:
+        recipe_id:
+          type: integer
+          description: Unique identifier of the recipe
+          example: 1
         name:
           type: string
           description: The name or title of the recipe
           example: Spaghetti Bolognese
-        ingredients:
-          type: array
-          description: A list of ingredients with quantities
-          example:
-          - 200g spaghetti
-          - 300g minced beef
-          - "2 cloves garlic, minced"
-          - "1 onion, chopped"
-          - 400g canned tomatoes
-          items:
-            type: string
         picture:
           type: string
           description: A URL pointing to an image of the recipe
           format: uri
           example: https://example.com/images/spaghetti-bolognese.jpg
+        ingredients:
+          type: array
+          description: A list of ingredients with quantities
+          items:
+            type: string
+          example:
+            - 200g spaghetti
+            - 300g minced beef
+            - 2 cloves garlic, minced
         timeToMake:
-          type: integer
-          description: Total preparation time in minutes
-          example: 45
+          oneOf:
+            - type: integer
+              example: 45
+            - type: string
+              example: "45 minutes"
+          description: Total preparation time (in minutes or as string with units)
         popularity:
           type: integer
           description: Number of likes or rating count
@@ -414,36 +417,58 @@ components:
         dietCategory:
           type: string
           description: |
-            The dietary classification of the recipe. "vegan" means fully plant-based, "vegetarian" means no meat but may include eggs/dairy, and "none" means no dietary restriction.
-          example: vegetarian
+            The dietary classification of the recipe.
           enum:
-          - vegan
-          - vegetarian
-          - none
+            - vegan
+            - vegetarian
+            - none
+          example: vegetarian
         isGlutenFree:
-          type: boolean
+          oneOf:
+            - type: boolean
+              example: true
+            - type: integer
+              enum: [0, 1]
+              example: 1
           description: Indicates whether the recipe is gluten-free
-          example: true
-        DishesAmount:
-          type: integer
-          description: The number of dishes
-          example: 4
-        instructions:
+        dishes:
+          oneOf:
+            - type: integer
+              example: 4
+            - type: string
+              example: "unknown"
+          description: The number of dishes or servings
+        description:
           type: string
-          description: The instructions
-          example: "1. Boil spaghetti according to package instructions. 2. Brown minced beef in a pan, add garlic and onion, cook until soft. 3. Add canned tomatoes and simmer for 20 minutes. 4. Serve sauce over pasta."
+          description: Cooking instructions or description of the recipe
+          example: "1. Boil spaghetti according to package instructions..."
         cuisine:
           type: string
           description: The cuisine type of the recipe
           example: Italian
+        created_by:
+          type: integer
+          description: User ID of the creator, if available
+          example: 1
+        isWatched:
+          type: boolean
+          description: Whether the recipe is marked as watched
+          example: false
+        isFavorite:
+          type: boolean
+          description: Whether the recipe is marked as favorite
+          example: true
+          
     user:
       required:
-      - country
-      - email
+      - username
+      - password
       - firstname
       - lastname
-      - password
-      - username
+      - email
+      - country
+      - phone
+      - profilePic
       type: object
       properties:
         username:
@@ -475,15 +500,15 @@ components:
           type: string
           description: The phone number of the user
           example: 123-456-7890
-        homePage:
+        profilePic:
           type: string
-          description: The user's personaly homepage URL
+          description: profile picture of user
           format: uri
-          example: https://www.johndoe.com
+          example: https://example.com/profile-pic.jpg
     login_body:
       required:
-      - password
       - username
+      - password
       type: object
       properties:
         username:
@@ -495,24 +520,9 @@ components:
     favorites_body:
       required:
       - recipeId
-      - username
       type: object
       properties:
-        username:
-          type: string
-          description: The user's username
         recipeId:
-          type: string
+          type: integer
           description: The ID of the recipe to add to favorites
-    inline_response_200:
-      type: object
-      properties:
-        randomRecipes:
-          type: array
-          items:
-            $ref: '#/components/schemas/recipe'
-    inline_response_200_1:
-      type: object
-      properties:
-        recipe:
-          $ref: '#/components/schemas/recipe'
+   

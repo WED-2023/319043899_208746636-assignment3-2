@@ -83,10 +83,16 @@ async function getSearchResults(search, number = 5, cuisine, diet, intolerance) 
       return;
     }
     for (const recipe of recipes_list) {
+      if (!(await isRecipeInLocalDb(recipe.recipe_id))) {
+        recipe.recipe_id = -1 * recipe.recipe_id;
+      }
       const watchedResult = await DButils.execQuery(`
         SELECT * FROM views 
         WHERE user_id = ${user_id} AND recipe_id = ${recipe.recipe_id}
       `);
+      if (recipe.recipe_id < 0) {
+        recipe.recipe_id = -1 * recipe.recipe_id;
+      }
       recipe['isWatched'] = watchedResult.length > 0;
     }
   }
@@ -99,10 +105,16 @@ async function getSearchResults(search, number = 5, cuisine, diet, intolerance) 
       return;
     }
     for (const recipe of recipes_list) {
+      if (!(await isRecipeInLocalDb(recipe.recipe_id))) {
+        recipe.recipe_id = -1 * recipe.recipe_id;
+      }
       const favoriteResult = await DButils.execQuery(`
         SELECT * FROM FavoriteRecipes 
         WHERE user_id = ${user_id} AND recipe_id = ${recipe.recipe_id}
       `);
+      if (recipe.recipe_id < 0) {
+        recipe.recipe_id = -1 * recipe.recipe_id;
+      }
       recipe['isFavorite'] = favoriteResult.length > 0;
     }
   }
@@ -112,18 +124,53 @@ async function getSearchResults(search, number = 5, cuisine, diet, intolerance) 
   if (!recipeIds || recipeIds.length === 0) {
     return [];
   }
-  console.log("1");
+
+  console.log("Fetching recipes preview");
   const idsString = recipeIds.join(",");
-  console.log("2");
+  
+  // Fetch recipes from the local database
   const recipes = await DButils.execQuery(`
     SELECT *
     FROM project.recipes
     WHERE recipe_id IN (${idsString})
   `);
-      console.log("3");
 
-  return recipes.map(recipeRow => Recipe.fromDbRow(recipeRow));
-  
+  // Map existing recipe IDs
+  const existingRecipeIds = recipes.map(recipe => recipe.recipe_id);
+
+  // Find missing recipe IDs
+  const missingRecipeIds = recipeIds.filter(id => !existingRecipeIds.includes(id));
+  console.log("Missing recipe IDs:", missingRecipeIds);
+
+  // Fetch missing recipes from Spoonacular
+  const missingRecipes = await Promise.all(
+    missingRecipeIds.map(async (id) => {
+      try {
+        const recipeDetails = await getRecipeDetails(id); // Fetch from Spoonacular
+        console.log("Fetched recipe ${id} from Spoonacular");
+        return recipeDetails;
+      } catch (error) {
+        console.error("Error fetching recipe ${id} from Spoonacular:", error);
+        return null; // Skip if there's an error
+      }
+    })
+  );
+
+  // Filter out any null results (in case of errors)
+  const validMissingRecipes = missingRecipes.filter(recipe => recipe !== null);
+
+  // Combine local and fetched recipes
+  const allRecipes = [
+    ...recipes.map(recipeRow => Recipe.fromDbRow(recipeRow)), // Local recipes
+    ...validMissingRecipes // Recipes fetched from Spoonacular
+  ];
+
+  return allRecipes;
+}
+//helper function to check if a recipe is in the local database
+async function isRecipeInLocalDb(recipe_id) {
+  const result = await DButils.execQuery(`SELECT 1 FROM recipes WHERE recipe_id = ${recipe_id}`);
+  return result.length > 0;
 }
 
 exports.getRecipeDetails = getRecipeDetails;
@@ -133,5 +180,6 @@ module.exports = {
     getSearchResults,
     addFavoriteMetadata,
     addWatchedMetadata,
-    getRecipesPreview
+    getRecipesPreview,
+    isRecipeInLocalDb,
 };

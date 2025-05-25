@@ -75,8 +75,8 @@ class Recipe {
       created_by,
       apiResponse.summary || "No description available",
       apiResponse.extendedIngredients ? apiResponse.extendedIngredients.map(i => i.original) : [],
-      apiResponse.cuisines ? apiResponse.cuisines[0] : "unknown",
-      apiResponse.dishes ? apiResponse.dishes[0] : "unknown"
+    (apiResponse.cuisines && apiResponse.cuisines.length > 0) ? apiResponse.cuisines[0] : "unknown",
+    (apiResponse.dishes && apiResponse.dishes.length > 0) ? apiResponse.dishes[0] : "unknown"
     );
   }
 }

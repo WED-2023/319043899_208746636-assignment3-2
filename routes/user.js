@@ -45,19 +45,10 @@ router.post('/favorites', async (req,res,next) => {
     if (!recipe_id) {
       return res.status(400).send({ message: "Missing recipeId in body" });
     }
-    // const recipeExists = await DButils.execQuery(`SELECT recipe_id FROM recipes WHERE recipe_id = ${recipe_id}`);
-    // if (recipeExists.length === 0) {
-    //   return res.status(404).send({ message: "Recipe not found", success: false });
-    // }
 
     await user_utils.markAsFavorite(user_id,recipe_id);
 
-    await DButils.execQuery(`
-      UPDATE project.recipes SET popularity = popularity + 1 WHERE recipe_id = ${recipe_id}
-    `);
-
-
-    res.status(200).send("The Recipe successfully saved as favorite");
+    res.status(201).send("The Recipe successfully saved as favorite");
     } catch(error){
       console.error("Error in /favorites:", error);
       if (error.code === 'ER_DUP_ENTRY'||error.message.includes("Duplicate entry") ) {
@@ -96,10 +87,10 @@ router.get('/favorites', async (req,res,next) => {
   }
 });
 
-router.delete('/favorites', async (req,res,next) => {
+router.delete('/favorites/:recipeId', async (req,res,next) => {
   try{
     const user_id = req.session.user_id;
-    const recipe_id = req.body.recipeId;
+    const recipe_id = req.params.recipeId;
     
     if (!recipe_id) {
       return res.status(400).send({ message: "Missing recipeId" });
@@ -107,7 +98,7 @@ router.delete('/favorites', async (req,res,next) => {
 
     await user_utils.removeFavorite(user_id, recipe_id);
 
-    res.status(200).send({ message: "Recipe removed from favorites" });
+    res.sendStatus(204)//.send({ message: "Recipe removed from favorites" });
   } catch (error) {
     console.error("Error in DELETE /favorites/:recipeId:", error);
     next(error);
@@ -138,14 +129,15 @@ router.post("/lastViews", async (req, res, next) => {
 router.get("/lastViews", async (req, res) => {
   try {
     console.log("Got last views request");
-    const recipes = await user_utils.getLastThreeViews(req.user_id);
+    const recipes = await user_utils.getLastThreeViews(req.session.user_id);
     if (!recipes || recipes.length === 0) {
       return res.status(404).send({ message: "No views found" });
     }
 
     console.log("Adding metadata to last viewed recipes");
 
-    await recipes_utils.addFavoriteMetadata(req.user_id, recipes);
+    await recipes_utils.addFavoriteMetadata(req.session.user_id, recipes);
+    
     for (const recipe of recipes) {
       recipe['isWatched'] = true;
     }
