@@ -23,23 +23,67 @@ async function getRecipeInformation(recipe_id) {
 async function getRecipeDetails(recipe_id) {
     console.log("Attempting to get recipe detail form Spoonacular API, recipe_id:", recipe_id);
     let recipe_info = await getRecipeInformation(recipe_id);
-    return Recipe.fromSpoonacularApi(recipe_info.data);
+    let recipe = Recipe.fromSpoonacularApi(recipe_info.data);
+
+
+    const externalId = -1 * Math.abs(recipe_id);
+    const likesResult = await DButils.execQuery(`
+        SELECT COUNT(*) AS likesCount FROM Likes WHERE recipe_id = ${externalId}
+    `);
+    const likesCount = likesResult[0]?.likesCount || 0;
+
+    recipe.popularity = (recipe.popularity || 0) + likesCount;
+
+    return recipe;
 }
 
 
 async function getRandomRecipes() {
-    let response =  await axios.get(`${api_domain}/random`, {
+    // let response =  await axios.get(`${api_domain}/random`, {
+    //     params: {
+    //         number: 3,
+    //         apiKey: process.env.spooncular_apiKey
+    //     }
+    // });
+    // console.log("Got random recipes response");
+    // let recipes = [];
+    // for (const r of response.data.recipes) {
+    //     let recipe = Recipe.fromSpoonacularApi(r);
+
+    //     // המרה ל-ID שלילי לצורך חיפוש בטבלת הלייקים המקומית
+    //     const externalId = -1 * Math.abs(recipe.recipe_id);
+
+    //     try {
+    //         const likesResult = await DButils.execQuery(`
+    //             SELECT COUNT(*) AS likesCount FROM Likes WHERE recipe_id = ${externalId}
+    //         `);
+    //         const likesCount = likesResult[0]?.likesCount || 0;
+
+    //         // חיבור בין הפופולריות של Spoonacular ללייקים המקומיים
+    //         recipe.popularity = (recipe.popularity || 0) + likesCount;
+    //     } catch (error) {
+    //         console.error(`Error fetching likes for recipe_id ${externalId}:`, error);
+    //         recipe.popularity = recipe.popularity || 0;
+    //     }
+
+    //     recipes.push(recipe);
+    // }
+    // return recipes;   
+    
+    let response = await axios.get(`${api_domain}/random`, {
         params: {
             number: 3,
             apiKey: process.env.spooncular_apiKey
         }
     });
+
     console.log("Got random recipes response");
-    let recipes = [];
-    for (const r of response.data.recipes) {
-        recipes.push(Recipe.fromSpoonacularApi(r));
-    }
-    return recipes;   
+
+    const recipes = await Promise.all(
+        response.data.recipes.map(r => getRecipeDetails(r.id))
+    );
+
+    return recipes;
 }
 
 

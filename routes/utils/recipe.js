@@ -69,9 +69,9 @@ class Recipe {
       apiResponse.title,
       apiResponse.image,
       `${apiResponse.readyInMinutes} minutes`,
-      apiResponse.aggregateLikes,          // או apiResponse.spoonacularScore
+      apiResponse.aggregateLikes,          
       apiResponse.vegan ? "vegan" : apiResponse.vegetarian ? "vegetarian" : "none",
-      apiResponse.glutenFree,              // 注意 这里是 Boolean
+      apiResponse.glutenFree,             
       created_by,
       apiResponse.summary || "No description available",
       apiResponse.extendedIngredients ? apiResponse.extendedIngredients.map(i => i.original) : [],

@@ -46,6 +46,9 @@ router.get("/", (req, res) => res.send("im here"));
 router.get("/:recipeId", async (req, res, next) => {
   try {
     const recipe = await recipes_utils.getRecipeDetails(req.params.recipeId);
+    const recipes=[recipe];
+    await recipes_utils.addWatchedMetadata(req.user_id, recipes);
+    await recipes_utils.addFavoriteMetadata(req.user_id, recipes);
     console.log(recipe);
     res.send(recipe);
   } catch (error) {

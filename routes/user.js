@@ -98,7 +98,7 @@ router.delete('/favorites/:recipeId', async (req,res,next) => {
 
     await user_utils.removeFavorite(user_id, recipe_id);
 
-    res.sendStatus(204)//.send({ message: "Recipe removed from favorites" });
+    res.sendStatus(204)
   } catch (error) {
     console.error("Error in DELETE /favorites/:recipeId:", error);
     next(error);

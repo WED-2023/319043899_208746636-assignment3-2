@@ -2,9 +2,7 @@ const DButils = require("./DButils");
 const recipes_utils = require("./recipes_utils");
 const Recipe = require("./recipe");
 
-// async function markAsFavorite(user_id, recipe_id){
-//     await DButils.execQuery(`insert into FavoriteRecipes values ('${user_id}',${recipe_id})`);
-// }
+
 
 async function createRecipe(recipeData) {
   const {
@@ -32,6 +30,8 @@ async function createRecipe(recipeData) {
 
   return await DButils.execQuery(query);
 }
+
+
 async function getLastThreeViews(user_id) {
   try {
     console.log("Fetching last 3 views for user:", user_id);
@@ -80,6 +80,7 @@ async function getLastThreeViews(user_id) {
   }
 }
 
+
 async function markAsFavorite(user_id, recipe_id) {
     // Check if the recipe exists in the recipes table
     const recipeExists = await DButils.execQuery(`
@@ -90,8 +91,16 @@ async function markAsFavorite(user_id, recipe_id) {
     if (recipeExists.length === 0) {
       console.log(`Recipe ${recipe_id} does not exist. Setting recipe_id to ${recipe_id * -1}`);
       recipe_id = recipe_id * -1;
-    }
 
+    await DButils.execQuery(
+      `INSERT INTO FavoriteRecipes (user_id, recipe_id) VALUES (${user_id}, ${recipe_id})`
+    );
+    await DButils.execQuery(
+      `INSERT INTO Likes (user_id, recipe_id) VALUES (${user_id}, ${recipe_id})`
+    );
+
+    }
+else{
   await DButils.execQuery(
     `INSERT INTO FavoriteRecipes (user_id, recipe_id) VALUES (${user_id}, ${recipe_id})`
   );
@@ -99,6 +108,8 @@ async function markAsFavorite(user_id, recipe_id) {
       UPDATE project.recipes SET popularity = popularity + 1 WHERE recipe_id = ${recipe_id}
   `);
 }
+}
+
 
 async function getFavoriteRecipes(user_id) {
   const recipeRows = await DButils.execQuery(`
@@ -203,15 +214,7 @@ async function recordView(user_id, recipe_id) {
   }
 }
 
-// async function preperForPreview(user_id, recipes_list) {
-//   for (const recipe of recipes_list) {  
-//     const result = await DButils.execQuery(`
-//           SELECT * FROM views 
-//           WHERE user_id = ${user_id} AND recipe_id = ${recipe_id}
-//       `);
-//       recipe['isWatched'] = result.length > 0;
-//   }
-// }
+
 
 
 exports.recordView = recordView;

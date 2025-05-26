@@ -1,17 +1,17 @@
 openapi: 3.0.0
 info:
-  title: Ido and Aviv the Chefs
-  description: This is an API for the best recipes website in the world
-  contact:
-    email: avivnach@post.bgu.ac.il
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  version: 1.0.0
+  title: Recipes api
+  description: API for recipes project
+  version: 1.0.1
 servers:
-- url: https://127.0.0.1:3000
-- #url: https://virtserver.swaggerhub.com/avivnach/food-recipes/1.0.0
-  description: SwaggerHub API Auto Mocking
+  # local:
+  - url: "http://127.0.0.1:3000"
+    # remote:
+    # - url: "http://132.72.65.211"
+    description: SwaggerHub API Auto Mocking hey
+
+#url: https://virtserver.swaggerhub.com/avivnach/food-recipes/1.0.0
+#  description: SwaggerHub API Auto Mocking
 tags:
 - name: Authentication
   description: |
@@ -333,7 +333,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/recipe'
+                type: array
+                items:
+                  $ref: '#/components/schemas/recipe'
+
         '404':
           description: No recipes found
         '500':
