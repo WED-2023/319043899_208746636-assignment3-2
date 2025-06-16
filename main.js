@@ -43,7 +43,7 @@ app.get("/",function(req,res)
 // app.options("*", cors());
 
 const corsConfig = {
-  origin: true,
+  origin: 'http://localhost:8080',
   credentials: true
 };
 
