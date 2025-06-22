@@ -23,7 +23,7 @@ require("dotenv").config();
 
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS recipes (
-        recipe_id INT AUTO_INCREMENT PRIMARY KEY,
+        recipe_id BIGINT PRIMARY KEY,
         name VARCHAR(255) NOT NULL UNIQUE,
         picture VARCHAR(255) NOT NULL,
         timeToMake INT NOT NULL,

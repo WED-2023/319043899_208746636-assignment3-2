@@ -21,11 +21,13 @@ async function createRecipe(recipeData) {
   const escape = str => str.replace(/'/g, "''");
   const ingredientsStr = JSON.stringify(ingredients).replace(/'/g, "''");
 
+  const recipe_id = Date.now(); // Use timestamp as a unique ID
+
   const query = `
     INSERT INTO recipes 
-    (name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
+    (recipe_id, name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
     VALUES 
-    ('${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}', '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${ingredientsStr}', '${escape(cuisine)}', ${dishes})
+    (${recipe_id}, '${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}', '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${ingredientsStr}', '${escape(cuisine)}', ${dishes})
   `;
 
   return await DButils.execQuery(query);
