@@ -15,19 +15,21 @@ async function createRecipe(recipeData) {
     description,
     ingredients,
     cuisine,
-    dishes
+    dishes,
+    analyzedInstructions // <-- new field
   } = recipeData;
 
-  const escape = str => str.replace(/'/g, "''");
+  const escape = str => typeof str === "string" ? str.replace(/'/g, "''") : str;
   const ingredientsStr = JSON.stringify(ingredients).replace(/'/g, "''");
+  const analyzedInstructionsStr = analyzedInstructions ? JSON.stringify(analyzedInstructions).replace(/'/g, "''") : null;
 
   const recipe_id = Date.now(); // Use timestamp as a unique ID
 
   const query = `
     INSERT INTO recipes 
-    (recipe_id, name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes)
+    (recipe_id, name, picture, timeToMake, dietCategory, isGlutenFree, created_by, description, ingredients, cuisine, dishes, analyzedInstructions)
     VALUES 
-    (${recipe_id}, '${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}', '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${ingredientsStr}', '${escape(cuisine)}', ${dishes})
+    (${recipe_id}, '${escape(name)}', '${escape(picture)}', '${escape(timeToMake)}', '${escape(dietCategory)}', ${isGlutenFree}, ${created_by}, '${escape(description)}', '${ingredientsStr}', '${escape(cuisine)}', ${dishes}, ${analyzedInstructionsStr ? `'${analyzedInstructionsStr}'` : 'NULL'})
   `;
 
   return await DButils.execQuery(query);

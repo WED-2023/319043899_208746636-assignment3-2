@@ -175,11 +175,24 @@ router.post("/recipes", async (req, res) => {
       description,
       ingredients,
       cuisine,
-      dishes
+      dishes,
+      analyzedInstructions
     } = req.body;
 
     const created_by = req.user_id;
+    console.log("Creating recipe with data:", req.body);
+    console.log(      name,
+      picture,
+      timeToMake,
+      dietCategory,
+      isGlutenFree,
+      description,
+      ingredients,
+      cuisine,
+      dishes,
+      analyzedInstructions);
 
+      
     if (
       !name || !picture || !timeToMake || !dietCategory || isGlutenFree === undefined ||
       !description || !ingredients || !cuisine || dishes === undefined
@@ -200,7 +213,8 @@ router.post("/recipes", async (req, res) => {
       description,
       ingredients,
       cuisine,
-      dishes
+      dishes,
+      analyzedInstructions // <-- new field
     });
     res.status(201).send({ message: "Recipe created successfully", recipe_id: result.insertId });
   } catch (error) {
