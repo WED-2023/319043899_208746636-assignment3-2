@@ -11,7 +11,8 @@ class Recipe {
     description,
     ingredients,
     cuisine,
-    dishes
+    dishes,
+    analyzedInstructions // <-- renamed property
   ) {
     this.recipe_id = recipe_id;
     this.name = name;
@@ -25,6 +26,7 @@ class Recipe {
     this.ingredients = ingredients;  
     this.cuisine = cuisine;          
     this.dishes = dishes;           
+    this.analyzedInstructions = analyzedInstructions; // <-- renamed property
   }
 
   getDetails() {
@@ -41,6 +43,7 @@ class Recipe {
       ingredients: this.ingredients,
       cuisine: this.cuisine,
       dishes: this.dishes,
+      analyzedInstructions: this.analyzedInstructions, // <-- renamed property
     };
   }
 
@@ -59,11 +62,14 @@ class Recipe {
       row.description,
       row.ingredients ,
       row.cuisine,
-      row.dishes
+      row.dishes,
+      row.analyzedInstructions // <-- renamed property
     );
   }
 
   static fromSpoonacularApi(apiResponse, created_by = null) {
+    // Save analyzedInstructions as is
+    const analyzedInstructions = apiResponse.analyzedInstructions || null;
     return new Recipe(
       apiResponse.id,
       apiResponse.title,
@@ -76,7 +82,8 @@ class Recipe {
       apiResponse.summary || "No description available",
       apiResponse.extendedIngredients ? apiResponse.extendedIngredients.map(i => i.original) : [],
     (apiResponse.cuisines && apiResponse.cuisines.length > 0) ? apiResponse.cuisines[0] : "unknown",
-    (apiResponse.dishes && apiResponse.dishes.length > 0) ? apiResponse.dishes[0] : "unknown"
+    (apiResponse.dishes && apiResponse.dishes.length > 0) ? apiResponse.dishes[0] : "unknown",
+    analyzedInstructions // renamed property
     );
   }
 }
