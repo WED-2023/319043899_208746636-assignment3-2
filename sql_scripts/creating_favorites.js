@@ -23,7 +23,7 @@ require("dotenv").config();
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS FavoriteRecipes (
         user_id INT NOT NULL,
-        recipe_id INT NOT NULL,
+        recipe_id BIGINT NOT NULL,
         PRIMARY KEY (user_id, recipe_id),
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
       )
