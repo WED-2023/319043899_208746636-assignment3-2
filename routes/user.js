@@ -153,6 +153,11 @@ router.get("/lastViews", async (req, res) => {
 router.get('/myrecipes', async (req,res) => {
   try{
     myrecipes = await user_utils.getMyRecipes(req.session.user_id);
+    await recipes_utils.addFavoriteMetadata(req.session.user_id, myrecipes);
+    for (const recipe of myrecipes) {
+      recipe['isWatched'] = true;
+    }
+
     res.status(200).send(myrecipes);
   } catch (error) {
     if (error.status === 404) {
@@ -192,7 +197,7 @@ router.post("/recipes", async (req, res) => {
       dishes,
       analyzedInstructions);
 
-      
+
     if (
       !name || !picture || !timeToMake || !dietCategory || isGlutenFree === undefined ||
       !description || !ingredients || !cuisine || dishes === undefined
